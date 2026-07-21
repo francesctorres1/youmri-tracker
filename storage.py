@@ -33,15 +33,21 @@ def _has_gsheets():
 # ===========================================================================
 # BACKEND GOOGLE SHEETS
 # ===========================================================================
-def _gs_client():
+@st.cache_resource
+def _gs_spreadsheet():
+    """Conexión cacheada: una sola vez por sesión, no en cada operación."""
     import gspread
     from google.oauth2.service_account import Credentials
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    scopes = ["https://www.googleapis.com/auth/spreadsheets",
+              "https://www.googleapis.com/auth/drive"]
     creds = Credentials.from_service_account_info(
         dict(st.secrets["gcp_service_account"]), scopes=scopes)
     gc = gspread.authorize(creds)
-    sh = gc.open_by_url(st.secrets["sheet_url"])
-    return sh
+    return gc.open_by_url(st.secrets["sheet_url"])
+
+
+def _gs_client():
+    return _gs_spreadsheet()
 
 
 def _gs_ws(sh, title, header):
@@ -72,6 +78,29 @@ def _gs_save_task(task):
         ws.append_row(row)
 
 
+def _gs_save_tasks_bulk(tasks):
+    """Escribe muchas tareas de una sola vez (evita rate limit al importar)."""
+    sh = _gs_client()
+    ws = _gs_ws(sh, "Tareas", TASK_FIELDS)
+    existing = ws.get_all_records()
+    by_id = {str(r.get("ID")): i + 2 for i, r in enumerate(existing)}  # fila real
+    updates = []
+    appends = []
+    last_col = chr(64 + len(TASK_FIELDS))
+    for task in tasks:
+        row = [str(task.get(f, "")) for f in TASK_FIELDS]
+        rid = str(task.get("ID"))
+        if rid in by_id:
+            r = by_id[rid]
+            updates.append({"range": f"A{r}:{last_col}{r}", "values": [row]})
+        else:
+            appends.append(row)
+    if updates:
+        ws.batch_update(updates)
+    if appends:
+        ws.append_rows(appends)
+
+
 def _gs_load_docs():
     sh = _gs_client()
     ws = _gs_ws(sh, "Docs", DOC_FIELDS)
@@ -81,7 +110,6 @@ def _gs_load_docs():
 def _gs_save_doc(tipo, nombre, n):
     sh = _gs_client()
     ws = _gs_ws(sh, "Docs", DOC_FIELDS)
-    # reemplazar si existe misma combinación tipo (solo 1 vigente por tipo? guardamos histórico)
     ws.append_row([tipo, nombre, str(n),
                    datetime.now().strftime("%Y-%m-%d %H:%M")])
 
@@ -144,6 +172,14 @@ def _sq_delete_doc(tipo, nombre):
     con.commit(); con.close()
 
 
+def _sq_save_tasks_bulk(tasks):
+    con = _db()
+    for task in tasks:
+        con.execute("INSERT OR REPLACE INTO tareas (ID,data) VALUES (?,?)",
+                    (task["ID"], json.dumps(task, ensure_ascii=False)))
+    con.commit(); con.close()
+
+
 # ===========================================================================
 # API PÚBLICA (enruta al backend disponible)
 # ===========================================================================
@@ -152,6 +188,9 @@ def load_state():
 
 def save_task(task):
     return _gs_save_task(task) if _has_gsheets() else _sq_save_task(task)
+
+def save_tasks_bulk(tasks):
+    return _gs_save_tasks_bulk(tasks) if _has_gsheets() else _sq_save_tasks_bulk(tasks)
 
 def load_docs_meta():
     return _gs_load_docs() if _has_gsheets() else _sq_load_docs()

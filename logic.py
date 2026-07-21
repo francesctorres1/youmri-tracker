@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Lógica de reconciliación al importar Backlog / Priorización."""
+"""Logica de reconciliacion al importar Backlog / Priorizacion."""
 import pandas as pd
-from storage import load_state, save_task
+from storage import load_state, save_tasks_bulk
 
 
 def merge_backlog(df_new: pd.DataFrame, fname: str):
-    """Añade historias nuevas; conserva estado/asignado/histórico de las existentes."""
+    """Anade historias nuevas; conserva estado/asignado/historico de las existentes.
+    Escribe todo en un solo lote (evita rate limit de Google Sheets)."""
     state = load_state()
-    existing_ids = {t["ID"] for t in state}
+    by_id = {t["ID"]: t for t in state}
+    result = []
     for _, row in df_new.iterrows():
         rid = row["ID"]
         base = {
@@ -22,11 +24,10 @@ def merge_backlog(df_new: pd.DataFrame, fname: str):
             "Dependencias": row.get("Dependencias", ""),
             "RefDoc": row.get("RefDoc", ""),
         }
-        if rid in existing_ids:
-            t = next(t for t in state if t["ID"] == rid)
-            for k, v in base.items():
-                t[k] = v
-            save_task(t)
+        if rid in by_id:
+            t = dict(by_id[rid])
+            t.update(base)
+            result.append(t)
         else:
             base.update({
                 "Asignado": "— Sin asignar —",
@@ -37,19 +38,26 @@ def merge_backlog(df_new: pd.DataFrame, fname: str):
                 "Historico": "",
                 "Grupo": "",
             })
-            save_task(base)
+            result.append(base)
+    save_tasks_bulk(result)
 
 
 def apply_priorizacion(df_p: pd.DataFrame):
-    """Vuelca la columna 'Tu prioridad' de la priorización sobre las historias."""
+    """Vuelca la columna 'Tu prioridad' de la priorizacion sobre las historias.
+    Escribe en un solo lote."""
     state = load_state()
-    idx = {t["ID"]: t for t in state}
+    idx = {t["ID"]: dict(t) for t in state}
+    cambiadas = []
     for _, row in df_p.iterrows():
         rid = row["ID"]
         if rid in idx:
             t = idx[rid]
+            changed = False
             if pd.notna(row.get("Prio_Francesc")):
-                t["Prio_Francesc"] = str(row["Prio_Francesc"])
+                t["Prio_Francesc"] = str(row["Prio_Francesc"]); changed = True
             if pd.notna(row.get("Notas")) and str(row["Notas"]).strip():
-                t["Notas"] = str(row["Notas"])
-            save_task(t)
+                t["Notas"] = str(row["Notas"]); changed = True
+            if changed:
+                cambiadas.append(t)
+    if cambiadas:
+        save_tasks_bulk(cambiadas)
