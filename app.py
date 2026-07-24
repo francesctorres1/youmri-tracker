@@ -35,7 +35,6 @@ def _check_access():
             st.error("Contrase\u00f1a incorrecta.")
     st.stop()
 
-st.write("DEBUG:", list(st.secrets.keys()))
 _check_access()
 PUEDE_EDITAR = st.session_state.get("puede_editar", False)
 
