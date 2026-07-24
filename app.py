@@ -73,7 +73,9 @@ st.markdown(f"""
     [data-baseweb="popover"], [data-baseweb="popover"] * {{ color:{NOCTURN} !important; }}
     [data-testid="stPopoverBody"], [data-testid="stPopoverBody"] * {{ color:{NOCTURN} !important; }}
     div[data-baseweb="popover"] [data-testid="stMarkdownContainer"], div[data-baseweb="popover"] [data-testid="stMarkdownContainer"] * {{ color:{NOCTURN} !important; }}
-    [data-baseweb="select"] [data-baseweb="placeholder"] {{ color:{NOCTURN} !important; }}
+    [data-baseweb="select"] div {{ color:{NOCTURN} !important; }}
+    [data-baseweb="select"] span {{ color:{NOCTURN} !important; }}
+    [data-testid="stMultiSelect"] div, [data-testid="stMultiSelect"] span {{ color:{NOCTURN} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
