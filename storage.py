@@ -16,7 +16,7 @@ import streamlit as st
 # Campos de una tarea (columnas de la hoja "Tareas")
 TASK_FIELDS = ["ID", "Épica", "Fase", "Clasificación", "Prioridad", "Historia",
                "Criterios", "SP", "Dependencias", "RefDoc", "Asignado",
-               "Estado", "Correctivas", "Prio_Francesc", "Notas", "Historico"]
+               "Estado", "Correctivas", "Prio_Francesc", "Notas", "Historico", "Grupo"]
 
 DOC_FIELDS = ["tipo", "nombre", "n", "fecha"]
 
