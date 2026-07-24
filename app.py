@@ -16,6 +16,28 @@ from logic import merge_backlog, apply_priorizacion
 
 st.set_page_config(page_title="YouMRI \u00b7 Gesti\u00f3n de Desarrollo",
                    page_icon="\U0001F9E0", layout="wide")
+# ---------------- CONTROL DE ACCESO ----------------
+def _check_access():
+    if st.session_state.get("auth_ok"):
+        return
+    st.markdown("### \U0001F510 Acceso a YouMRI \u00b7 Gesti\u00f3n de Desarrollo")
+    pwd = st.text_input("Introduce la contrase\u00f1a", type="password")
+    if st.button("Entrar"):
+        if pwd == st.secrets.get("app_password_editor"):
+            st.session_state["auth_ok"] = True
+            st.session_state["puede_editar"] = True
+            st.rerun()
+        elif pwd == st.secrets.get("app_password_lectura"):
+            st.session_state["auth_ok"] = True
+            st.session_state["puede_editar"] = False
+            st.rerun()
+        else:
+            st.error("Contrase\u00f1a incorrecta.")
+    st.stop()
+
+_check_access()
+PUEDE_EDITAR = st.session_state.get("puede_editar", False)
+
 
 NOCTURN = "#0E0F28"
 ESPURNA = "#00F1CE"
