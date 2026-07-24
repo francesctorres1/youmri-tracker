@@ -58,7 +58,10 @@ st.markdown(f"""
     [data-testid="stMetricLabel"] {{ color:#C7C9E0 !important; }}
     div[data-testid="stMetricValue"] {{ color:{ESPURNA} !important; }}
     [data-testid="stCaptionContainer"], .stCaption, small {{ color:#AEB1CC !important; }}
-   [data-testid="stExpander"] summary, .streamlit-expanderHeader {{ color:{NOCTURN} !important; }}
+   [data-testid="stExpander"] summary {{ color:{NOCTURN} !important; }}
+    [data-testid="stExpander"] summary p {{ color:{NOCTURN} !important; }}
+    [data-testid="stExpander"] summary span {{ color:{NOCTURN} !important; }}
+    details summary, details summary * {{ color:{NOCTURN} !important; }}
     .stTabs [data-baseweb="tab"] {{ color:{CREMA} !important; }}
     .badge {{ display:inline-block; padding:3px 10px; border-radius:20px;
              color:white; font-size:12px; font-weight:600; }}
