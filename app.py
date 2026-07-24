@@ -73,6 +73,7 @@ st.markdown(f"""
     [data-baseweb="popover"], [data-baseweb="popover"] * {{ color:{NOCTURN} !important; }}
     [data-testid="stPopoverBody"], [data-testid="stPopoverBody"] * {{ color:{NOCTURN} !important; }}
     div[data-baseweb="popover"] [data-testid="stMarkdownContainer"], div[data-baseweb="popover"] [data-testid="stMarkdownContainer"] * {{ color:{NOCTURN} !important; }}
+    [data-baseweb="select"] [data-baseweb="placeholder"] {{ color:{NOCTURN} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
