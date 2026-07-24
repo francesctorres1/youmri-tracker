@@ -76,6 +76,7 @@ st.markdown(f"""
     [data-baseweb="select"] div {{ color:{NOCTURN} !important; }}
     [data-baseweb="select"] span {{ color:{NOCTURN} !important; }}
     [data-testid="stMultiSelect"] div, [data-testid="stMultiSelect"] span {{ color:{NOCTURN} !important; }}
+    .stButton button p, .stButton button span, .stButton button div {{ color:{NOCTURN} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
