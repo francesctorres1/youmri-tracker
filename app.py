@@ -68,6 +68,9 @@ st.markdown(f"""
     section[data-testid="stSidebar"] * {{ color:{NOCTURN} !important; }}
     section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
     section[data-testid="stSidebar"] small {{ color:#4A4C66 !important; }}
+    [data-testid="stPopover"] button p {{ color:{NOCTURN} !important; }}
+    [data-baseweb="popover"] {{ background:#FFFFFF !important; }}
+    [data-baseweb="popover"], [data-baseweb="popover"] * {{ color:{NOCTURN} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
