@@ -107,6 +107,10 @@ st.markdown(f"""
 st.markdown("<h1><span class='marca'>MRIPlanexpert | YouMRI</span> \u00b7 Gesti\u00f3n de Desarrollo</h1>",
             unsafe_allow_html=True)
 
+if not PUEDE_EDITAR:
+    st.info("\U0001F441\uFE0F **Modo solo lectura.** Puedes consultar y filtrar todo el tablero, "
+            "pero no realizar cambios.")
+
 @st.cache_data(ttl=30)
 def get_state():
     return load_state()
@@ -225,30 +229,31 @@ tab1, tabG, tab2 = st.tabs(["\U0001F5C2\uFE0F Tablero de tareas",
 
 # ============================ TAB 1: TABLERO ================================
 with tab1:
-    with st.container(border=True):
-        st.markdown("**\U0001F517 Selecci\u00f3n m\u00faltiple y grupos**")
-        gsel1, gsel2, gsel3 = st.columns([2,2,1])
-        grupo_pick = gsel1.selectbox("Marcar historias de un grupo existente",
-            ["\u2014 ninguno \u2014"] + GRUPOS, key="grupo_pick")
-        ids_del_grupo = [str(r["ID"]) for _, r in df.iterrows()
-                         if str(r.get("Grupo","")).strip() == grupo_pick] \
-                        if grupo_pick != "\u2014 ninguno \u2014" else []
-        if gsel2.button("\u2705 Marcar historias de este grupo", use_container_width=True,
-                        disabled=(grupo_pick == "\u2014 ninguno \u2014")):
-            for rid in ids_del_grupo:
-                st.session_state[f"chk_{rid}"] = True
-            st.rerun()
-        if gsel3.button("\u2716\uFE0F Limpiar selecci\u00f3n", use_container_width=True):
-            for k in list(st.session_state.keys()):
-                if k.startswith("chk_"):
-                    st.session_state[k] = False
-            st.rerun()
-        if grupo_pick != "\u2014 ninguno \u2014":
-            st.caption(f"El grupo \u00ab{grupo_pick}\u00bb tiene {len(ids_del_grupo)} historias: "
-                       f"{', '.join(ids_del_grupo)}")
+    if PUEDE_EDITAR:
+        with st.container(border=True):
+            st.markdown("**\U0001F517 Selecci\u00f3n m\u00faltiple y grupos**")
+            gsel1, gsel2, gsel3 = st.columns([2,2,1])
+            grupo_pick = gsel1.selectbox("Marcar historias de un grupo existente",
+                ["\u2014 ninguno \u2014"] + GRUPOS, key="grupo_pick")
+            ids_del_grupo = [str(r["ID"]) for _, r in df.iterrows()
+                             if str(r.get("Grupo","")).strip() == grupo_pick] \
+                            if grupo_pick != "\u2014 ninguno \u2014" else []
+            if gsel2.button("\u2705 Marcar historias de este grupo", use_container_width=True,
+                            disabled=(grupo_pick == "\u2014 ninguno \u2014")):
+                for rid in ids_del_grupo:
+                    st.session_state[f"chk_{rid}"] = True
+                st.rerun()
+            if gsel3.button("\u2716\uFE0F Limpiar selecci\u00f3n", use_container_width=True):
+                for k in list(st.session_state.keys()):
+                    if k.startswith("chk_"):
+                        st.session_state[k] = False
+                st.rerun()
+            if grupo_pick != "\u2014 ninguno \u2014":
+                st.caption(f"El grupo \u00ab{grupo_pick}\u00bb tiene {len(ids_del_grupo)} historias: "
+                           f"{', '.join(ids_del_grupo)}")
 
     seleccionadas = [t for _, t in view.iterrows()
-                     if st.session_state.get(f"chk_{t['ID']}", False)]
+                     if st.session_state.get(f"chk_{t['ID']}", False)] if PUEDE_EDITAR else []
 
     if seleccionadas:
         ids_sel = [t["ID"] for t in seleccionadas]
@@ -310,7 +315,8 @@ with tab1:
             grupo_lbl = f" \u00b7 \U0001F517 {t['Grupo']}"
 
         col_chk, col_exp = st.columns([1, 22])
-        col_chk.checkbox(" ", key=f"chk_{t['ID']}", label_visibility="collapsed")
+        if PUEDE_EDITAR:
+            col_chk.checkbox(" ", key=f"chk_{t['ID']}", label_visibility="collapsed")
         with col_exp.expander(
             f"**{t['ID']}** \u00b7 {t['\u00c9pica']} \u00b7 {t['Fase']}  \u2014  "
             f"[{t['Estado']}] \u00b7 \U0001F464 {t['Asignado']}{prio_lbl}{grupo_lbl}"):
@@ -330,41 +336,42 @@ with tab1:
                 meta += f" \u00b7 Grupo: {t['Grupo']}"
             st.caption(meta)
 
-            cc1, cc2 = st.columns(2)
-            new_estado = cc1.selectbox("Estado", ESTADOS,
-                index=ESTADOS.index(t["Estado"]) if t["Estado"] in ESTADOS else 0,
-                key=f"est_{t['ID']}")
-            new_pers = cc2.selectbox("Asignado a", PERSONAS,
-                index=PERSONAS.index(t["Asignado"]) if t["Asignado"] in PERSONAS else 0,
-                key=f"per_{t['ID']}")
+            if PUEDE_EDITAR:
+                cc1, cc2 = st.columns(2)
+                new_estado = cc1.selectbox("Estado", ESTADOS,
+                    index=ESTADOS.index(t["Estado"]) if t["Estado"] in ESTADOS else 0,
+                    key=f"est_{t['ID']}")
+                new_pers = cc2.selectbox("Asignado a", PERSONAS,
+                    index=PERSONAS.index(t["Asignado"]) if t["Asignado"] in PERSONAS else 0,
+                    key=f"per_{t['ID']}")
 
-            new_grupo = st.text_input("Grupo relacionado (opcional)",
-                value=str(t.get("Grupo","")), key=f"grp_{t['ID']}",
-                placeholder="Ej.: Sem\u00e1foro")
+                new_grupo = st.text_input("Grupo relacionado (opcional)",
+                    value=str(t.get("Grupo","")), key=f"grp_{t['ID']}",
+                    placeholder="Ej.: Sem\u00e1foro")
 
-            correctivas = t.get("Correctivas","")
-            if new_estado == "KO DEV \u2014 correctivas" or t["Estado"] == "KO DEV \u2014 correctivas":
-                correctivas = st.text_area("Tareas correctivas identificadas",
-                    value=t.get("Correctivas",""), key=f"cor_{t['ID']}",
-                    placeholder="Ej.: falta validar id_estudio...")
+                correctivas = t.get("Correctivas","")
+                if new_estado == "KO DEV \u2014 correctivas" or t["Estado"] == "KO DEV \u2014 correctivas":
+                    correctivas = st.text_area("Tareas correctivas identificadas",
+                        value=t.get("Correctivas",""), key=f"cor_{t['ID']}",
+                        placeholder="Ej.: falta validar id_estudio...")
 
-            if st.button("\U0001F4BE Guardar cambios", key=f"save_{t['ID']}"):
-                rec = dict(t); rec.pop("_ord", None); rec.pop("_prio", None)
-                cambios = []
-                if new_estado != t["Estado"]:
-                    stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-                    linea = f"[{stamp}] {t['Estado']} \u2192 {new_estado} (por Francesc)"
-                    rec["Historico"] = (t.get("Historico","") + "\n" + linea).strip()
-                    cambios.append("estado")
-                rec["Estado"] = new_estado
-                rec["Asignado"] = new_pers
-                rec["Correctivas"] = correctivas
-                rec["Grupo"] = new_grupo.strip()
-                save_task(rec)
-                refresh()
-                st.success("Guardado." + (" Fecha de cambio de estado registrada."
-                           if "estado" in cambios else ""))
-                st.rerun()
+                if st.button("\U0001F4BE Guardar cambios", key=f"save_{t['ID']}"):
+                    rec = dict(t); rec.pop("_ord", None); rec.pop("_prio", None)
+                    cambios = []
+                    if new_estado != t["Estado"]:
+                        stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+                        linea = f"[{stamp}] {t['Estado']} \u2192 {new_estado} (por Francesc)"
+                        rec["Historico"] = (t.get("Historico","") + "\n" + linea).strip()
+                        cambios.append("estado")
+                    rec["Estado"] = new_estado
+                    rec["Asignado"] = new_pers
+                    rec["Correctivas"] = correctivas
+                    rec["Grupo"] = new_grupo.strip()
+                    save_task(rec)
+                    refresh()
+                    st.success("Guardado." + (" Fecha de cambio de estado registrada."
+                               if "estado" in cambios else ""))
+                    st.rerun()
 
             if t.get("Historico"):
                 with st.popover("\U0001F552 Hist\u00f3rico de fechas"):
@@ -386,15 +393,16 @@ with tabG:
                         f"- **{m['ID']}** \u00b7 {m['\u00c9pica']} \u00b7 {m['Fase']} "
                         f"\u2014 [{m['Estado']}] \u00b7 \U0001F464 {m['Asignado']}{prio}")
                 # Deshacer grupo
-                if st.button(f"\U0001F5D1\uFE0F Deshacer grupo \u00ab{g}\u00bb",
-                             key=f"delgrp_{g}"):
-                    for _, m in miembros.iterrows():
-                        rec = dict(m); rec.pop("_ord", None); rec.pop("_prio", None)
-                        rec["Grupo"] = ""
-                        save_task(rec)
-                    refresh()
-                    st.success(f"Grupo \u00ab{g}\u00bb deshecho. Las historias vuelven al listado general.")
-                    st.rerun()
+                if PUEDE_EDITAR:
+                    if st.button(f"\U0001F5D1\uFE0F Deshacer grupo \u00ab{g}\u00bb",
+                                 key=f"delgrp_{g}"):
+                        for _, m in miembros.iterrows():
+                            rec = dict(m); rec.pop("_ord", None); rec.pop("_prio", None)
+                            rec["Grupo"] = ""
+                            save_task(rec)
+                        refresh()
+                        st.success(f"Grupo \u00ab{g}\u00bb deshecho. Las historias vuelven al listado general.")
+                        st.rerun()
 
 # ====================== TAB VISTA GLOBAL / EXPORT ========================
 with tab2:
