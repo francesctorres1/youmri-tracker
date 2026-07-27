@@ -115,7 +115,8 @@ def refresh():
     st.cache_data.clear()
 
 # ---------------- SIDEBAR ----------------
-with st.sidebar:
+if PUEDE_EDITAR:
+  with st.sidebar:
     st.markdown("### \U0001F4C4 Documentos fuente")
     st.caption("Sube tu Backlog y tu Priorizaci\u00f3n. Al reimportar una versi\u00f3n "
                "nueva se conservan los estados de las historias existentes.")
