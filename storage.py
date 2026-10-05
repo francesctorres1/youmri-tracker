@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Capa de almacenamiento.
 
@@ -51,12 +50,20 @@ def _gs_client():
 
 
 def _gs_ws(sh, title, header):
+    import gspread
+    # Solo crea la pestaña si gspread confirma que NO existe. Un fallo
+    # temporal (red, cuota) ya no se confunde con "no existe".
     try:
-        ws = sh.worksheet(title)
-    except Exception:
+        return sh.worksheet(title)
+    except gspread.exceptions.WorksheetNotFound:
+        pass
+    try:
         ws = sh.add_worksheet(title=title, rows=1000, cols=len(header))
         ws.append_row(header)
-    return ws
+        return ws
+    except Exception:
+        # Si la creación falla (p.ej. ya existe por una carrera), reabre.
+        return sh.worksheet(title)
 
 
 def _gs_load_state():
